@@ -75,12 +75,13 @@ it is visible, not so that the project can rely on it.
 
 ## Ethics audit (CI-enforced)
 
-Seven detector slots exist in the audit shape; **v0.1 implements only the
-filename-scan subset** (detectors 1–3). Detectors 4–7 are declared in the
-`Finding` enum but have no detection logic yet — they are v0.2 work and the
-shape exists so that contributors cannot quietly add a fixture that the
-project will later need to retract. The honest line is at
-`crates/ethics-audit/src/lib.rs:36`.
+All seven detectors are implemented in v0.1 as **filename-scan heuristics**;
+each one fires on real CI input and rejects the corresponding fixture class.
+The v0.2 work is to *replace each filename heuristic with a real decoder*
+(actual RDS / SCTE-35 byte parsing, real GPS metadata extraction, ISO 639-3
+lookup, etc.). What v0.1 ships is the audit *shape with working triggers*;
+what v0.2 ships is the audit *depth*. The honest module-level note lives at
+the top of `crates/ethics-audit/src/lib.rs`.
 
 | # | Detector                                       | v0.1 status                                                                         |
 |---|-----------------------------------------------|-------------------------------------------------------------------------------------|
@@ -92,10 +93,11 @@ project will later need to retract. The honest line is at
 | 6 | Missing C2PA manifest on derived artifacts    | `.ast.json`/`.derived.json`/`.interp.json` sibling-file check; real c2pa-rs in v0.2 |
 | 7 | Recording-location language ID                | filename `lang-` token check; real ISO 639-3 lookup in v0.2                         |
 
-A fixture flagged by any *implemented* detector is **rejected by CI**, not
-merely warned. Broadcast recordings are forbidden as fixtures at any commit
-reachable from `main`. As detectors 4–7 are implemented they inherit the same
-*reject, not warn* semantics — they do not become opt-in.
+A fixture flagged by **any** of the seven detectors is **rejected by CI**,
+not merely warned. Broadcast recordings are forbidden as fixtures at any
+commit reachable from `main`. The reject-not-warn semantics apply uniformly
+across all seven detectors today; v0.2's deeper decoders inherit them
+unchanged (the upgrade is depth, not severity).
 
 ### Documentation exemptions (v0.1 carve-out, must be re-evaluated in v0.2)
 

@@ -6,7 +6,9 @@ SPDX-FileCopyrightText: 2026 Kittler Aufschreibesystem Synthesizer contributors
 # Architecture
 
 > Source: 3-agent R14 exploration + independent critic round, 2026-05-17.
-> Score: 22/25 (ACCEPT-WITH-RESERVATIONS).
+> Score: **22/25** (ACCEPT-WITH-RESERVATIONS). The concept-memo round
+> closed at 23/25; the architecture round paid −1 on the general-purpose
+> axis to make the license matrix honest (full story in §7).
 > Detailed exploration record:
 > `~/.claude/projects/-home-runza/memory/project_kittler-oss-architecture-2026-05-17.md`
 
