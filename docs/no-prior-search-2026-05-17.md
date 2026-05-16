@@ -13,6 +13,17 @@ correct response is to open an issue titled "R18 prior-art discovery" and
 let the project decide between: (a) withdrawal, (b) merging upstream,
 (c) niche specialization. Default for v0.1 is (c).
 
+## Search metadata
+
+- **Search engine.** Anthropic native WebSearch (results-block API), as
+  invoked from the Claude Code CLI session that bootstrapped v0.1.
+- **Timezone for "2026-05-17".** UTC. The user's local clock was the same date.
+- **Result depth.** Up to ten ranked results per query; we record the top five
+  in the source list below.
+- **Reproducibility caveat.** Search-engine results drift; this record fixes
+  what was visible on the search date. A future contributor finding prior art
+  this search missed should follow the "open an issue" protocol below.
+
 ## Queries
 
 ### Query 1 — exact phrase + neighborhood

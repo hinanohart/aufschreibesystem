@@ -68,20 +68,27 @@ it is visible, not so that the project can rely on it.
 
 ## Ethics audit (CI-enforced)
 
-Seven detectors run on every PR touching `fixtures/` or `crates/signal-ingest/`:
+Seven detector slots exist in the audit shape; **v0.1 implements only the
+filename-scan subset** (detectors 1–3). Detectors 4–7 are declared in the
+`Finding` enum but have no detection logic yet — they are v0.2 work and the
+shape exists so that contributors cannot quietly add a fixture that the
+project will later need to retract. The honest line is at
+`crates/ethics-audit/src/lib.rs:36`.
 
-1. RDS PS / PTY presence in IQ samples (broadcast identification → re-broadcast law).
-2. SCTE-35 markers (commercial-cue insertion → broadcast law).
-3. Station callsign text in metadata.
-4. Recording-year ISO date (separates public domain from in-copyright).
-5. Colonial-context GPS metadata (recordings made under colonial administration
-   trigger an additional review).
-6. Missing C2PA manifest on derived artifacts.
-7. Recording-location language ID (community-of-origin notification).
+| # | Detector                                       | v0.1 status                                  |
+|---|-----------------------------------------------|----------------------------------------------|
+| 1 | RDS PS / PTY presence in IQ samples           | filename-scan (real RDS decoder in v0.2)     |
+| 2 | SCTE-35 commercial-cue markers                | filename-scan (real SCTE-35 decoder in v0.2) |
+| 3 | Station callsign text in metadata             | filename + 5-callsign hardcoded list         |
+| 4 | Recording-year ISO date (PD vs in-copyright)  | enum variant only, no detector yet (v0.2)    |
+| 5 | Colonial-context GPS metadata                 | enum variant only, no detector yet (v0.2)    |
+| 6 | Missing C2PA manifest on derived artifacts    | enum variant only, no detector yet (v0.2)    |
+| 7 | Recording-location language ID                | enum variant only, no detector yet (v0.2)    |
 
-A fixture failing any of these is **rejected by CI**, not merely warned.
-Broadcast recordings are forbidden as fixtures at any commit reachable from
-`main`.
+A fixture flagged by any *implemented* detector is **rejected by CI**, not
+merely warned. Broadcast recordings are forbidden as fixtures at any commit
+reachable from `main`. As detectors 4–7 are implemented they inherit the same
+*reject, not warn* semantics — they do not become opt-in.
 
 ## Memory and provenance (3-stage C2PA chain)
 

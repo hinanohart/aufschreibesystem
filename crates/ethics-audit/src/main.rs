@@ -3,16 +3,17 @@
 
 //! ethics-audit CLI — run over a directory, exit non-zero on any finding.
 
+#![allow(clippy::expect_used, clippy::unwrap_used)]
+
 use ethics_audit::{audit, Finding};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{env, fs, process};
 
 fn main() {
     let mut args = env::args().skip(1);
     let dir = args
         .next()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("fixtures/"));
+        .map_or_else(|| PathBuf::from("fixtures/"), PathBuf::from);
 
     if !dir.exists() {
         eprintln!("ethics-audit: directory does not exist: {}", dir.display());
@@ -26,13 +27,13 @@ fn main() {
     for entry in walker {
         total += 1;
         let findings = audit(&entry);
-        if !findings.is_empty() {
+        if findings.is_empty() {
+            println!("OK     {}", entry.display());
+        } else {
             failing += 1;
             for f in &findings {
                 println!("REJECT {}: {}", entry.display(), describe(f));
             }
-        } else {
-            println!("OK     {}", entry.display());
         }
     }
 
@@ -56,9 +57,9 @@ fn describe(f: &Finding) -> String {
     }
 }
 
-fn walk(root: &PathBuf) -> Vec<PathBuf> {
+fn walk(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
-    let mut stack = vec![root.clone()];
+    let mut stack = vec![root.to_path_buf()];
     while let Some(p) = stack.pop() {
         let Ok(rd) = fs::read_dir(&p) else { continue };
         for e in rd.flatten() {

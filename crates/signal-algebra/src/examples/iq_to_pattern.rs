@@ -6,6 +6,11 @@
 //! Run: `cargo run -p signal-algebra --example iq_to_pattern -- \
 //!         --seed 0xK1TT1ER --duration-ms 1000 --output target/mvp.ast.json`
 
+// Example binary: CLI parsing intentionally uses `.expect()` to surface usage
+// errors as panic-with-message. The library code (`src/`) must remain free of
+// `expect`/`unwrap` per workspace lints.
+#![allow(clippy::expect_used, clippy::unwrap_used)]
+
 use signal_algebra::{IntoPatternAtom, SyntheticIq};
 use std::env;
 use std::fs;

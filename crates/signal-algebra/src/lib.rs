@@ -19,8 +19,8 @@
 //!   not *what analysis*.
 
 #![allow(clippy::module_name_repetitions)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::time::Duration;
 

@@ -25,11 +25,13 @@ type ProvenanceTag
 trait Signal
   type Sample : Copy + Send
   type Time   : Copy + Ord
-  fn sample_rate_hz() -> Option<u64>       // method, not associated const, so the
+  fn sample_rate_hz()  -> Option<u64>      // method, not associated const, so the
                                             // trait stays dyn-compatible (a Box<dyn Signal>
                                             // is the materiality round-trip target)
   fn next_frame(out: &mut [Sample]) -> Result<Time, SignalErr>
-  fn provenance() -> ProvenanceTag
+  fn provenance()      -> ProvenanceTag    // required — every Signal carries a stable
+                                            // medium identifier; there is no default that
+                                            // hides device origin
 
 trait IntoPatternAtom : Signal
   fn cycle_duration()  -> Duration

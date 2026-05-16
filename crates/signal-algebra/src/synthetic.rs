@@ -90,7 +90,7 @@ impl IntoPatternAtom for SyntheticIq {
 
     fn to_audio(&self) -> Box<dyn Signal<Sample = f32, Time = u64>> {
         // Materiality: the pattern can always be re-grounded into audio.
-        Box::new(SyntheticIq::new(
+        Box::new(Self::new(
             self.sample_rate_hz,
             self.frequency_hz,
             self.duration,
@@ -119,10 +119,11 @@ mod tests {
     fn synthetic_signal_emits_expected_sample_count() {
         let mut sig = SyntheticIq::new(48_000, 440.0, Duration::from_millis(10));
         let mut buf = vec![0.0f32; 1024];
-        let mut total = 0usize;
+        let mut total: u64 = 0;
         loop {
+            let before = sig.remaining();
             match sig.next_frame(&mut buf) {
-                Ok(_) => total += buf.len().min(sig.remaining() as usize + buf.len()),
+                Ok(_) => total += before - sig.remaining(),
                 Err(SignalErr::Eof) => break,
                 Err(e) => panic!("unexpected error: {e}"),
             }
@@ -130,8 +131,8 @@ mod tests {
                 break;
             }
         }
-        // 48 kHz * 10 ms = 480 samples expected (within one buffer fill).
-        assert!(total >= 480, "got {total} samples");
+        // 48 kHz * 10 ms = 480 samples expected exactly.
+        assert_eq!(total, 480, "expected 480 samples, got {total}");
     }
 
     #[test]

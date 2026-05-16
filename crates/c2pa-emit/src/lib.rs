@@ -12,39 +12,53 @@
 //! it emits a manifest-shaped JSON document so the test surface is small. The
 //! c2pa-rs integration happens in v0.2.
 
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use signal_algebra::{EventStream, ProvenanceTag};
 
 /// One stage in the provenance chain.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "stage", rename_all = "snake_case")]
 pub enum Stage {
     /// L1 — raw bytes from the medium.
     Raw {
+        /// SHA-256 of the raw bytes, hex-lowercase.
         sha256_hex: String,
+        /// Number of raw bytes hashed.
         bytes_len: usize,
+        /// Provenance tag carried from the source `Signal`.
         provenance: ProvenanceTag,
     },
     /// L2/L3 — pattern AST extracted from the signal.
     Pattern {
+        /// SHA-256 of the canonical-serialized `EventStream`.
         sha256_hex: String,
+        /// `signal-algebra` SPEC_VERSION at the time of emission.
         algebra_version: String,
+        /// Number of events in the stream (denormalized for quick audit).
         event_count: usize,
     },
     /// L4 — interpretation by an AI model.
     Interpretation {
+        /// Model identifier (e.g., `qwen3-omni:7b`).
         model_id: String,
+        /// SHA-256 of the prompt sent to the model.
         prompt_sha256_hex: String,
+        /// Whether the model output carries a verifiable SynthID watermark.
         synthid_present: bool,
+        /// Sidecar release version.
         sidecar_version: String,
     },
 }
 
 /// A three-stage provenance manifest.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Manifest {
+    /// Schema identifier, e.g., `kittler-c2pa-shape/0.1.0`.
     pub spec: String,
+    /// Ordered chain stages.
     pub stages: Vec<Stage>,
 }
 
@@ -63,13 +77,22 @@ impl Manifest {
     }
 
     /// Append the pattern stage.
-    pub fn add_pattern(&mut self, stream: &EventStream, algebra_version: impl Into<String>) {
-        let canonical = serde_json::to_vec(stream).expect("event stream serializable");
+    ///
+    /// Returns the serde error rather than panicking, because the `EventStream`
+    /// hash is part of the C2PA chain and a silent fallback to an empty buffer
+    /// would write a manifest claiming a stage that cannot be reconstructed.
+    pub fn add_pattern(
+        &mut self,
+        stream: &EventStream,
+        algebra_version: impl Into<String>,
+    ) -> Result<(), serde_json::Error> {
+        let canonical = serde_json::to_vec(stream)?;
         self.stages.push(Stage::Pattern {
             sha256_hex: hex_sha256(&canonical),
             algebra_version: algebra_version.into(),
             event_count: stream.len(),
         });
+        Ok(())
     }
 
     /// Append the (mandatory-if-AI-was-applied) interpretation stage.
@@ -129,7 +152,7 @@ mod tests {
     fn three_stage_chain_is_well_ordered() {
         let mut m = Manifest::from_raw(b"hello", ProvenanceTag::synthetic(48_000));
         let sig = SyntheticIq::new(48_000, 440.0, Duration::from_secs(1));
-        m.add_pattern(&sig.to_event_stream(), "0.1.0");
+        m.add_pattern(&sig.to_event_stream(), "0.1.0").unwrap();
         m.add_interpretation("qwen3-omni:7b", b"describe this signal", true, "0.1.0");
         assert!(m.is_well_ordered());
         assert_eq!(m.stages.len(), 3);
@@ -141,7 +164,7 @@ mod tests {
         m.add_interpretation("qwen3-omni:7b", b"prompt", false, "0.1.0");
         // Adding pattern after interpretation is illegal.
         let sig = SyntheticIq::new(48_000, 440.0, Duration::from_secs(1));
-        m.add_pattern(&sig.to_event_stream(), "0.1.0");
+        m.add_pattern(&sig.to_event_stream(), "0.1.0").unwrap();
         assert!(!m.is_well_ordered());
     }
 

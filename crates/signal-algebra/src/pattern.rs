@@ -30,11 +30,20 @@ pub struct PatternEvent {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum PatternAtom {
     /// A single frequency in Hz (e.g., extracted from an IQ tone).
-    Frequency { hz: f64 },
+    Frequency {
+        /// Frequency value in hertz.
+        hz: f64,
+    },
     /// A symbolic sample id (e.g., decoded into a Strudel sample name).
-    SampleId { id: String },
+    SampleId {
+        /// Sample identifier as named by the L3 pattern-DSL.
+        id: String,
+    },
     /// A raw byte payload (e.g., one floppy-flux sector).
-    Bytes { payload: Vec<u8> },
+    Bytes {
+        /// Raw payload bytes; interpretation is L3's responsibility.
+        payload: Vec<u8>,
+    },
 }
 
 /// A stream of pattern events produced from a `Signal`.

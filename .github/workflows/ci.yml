@@ -26,8 +26,9 @@ jobs:
       - name: cargo fmt --check
         run: cargo fmt --all -- --check
       - name: cargo clippy
+        # Lints are enforced. If this fails, fix the warning rather than
+        # weakening the gate — see governance.md §"Kittler thought-fidelity filter".
         run: cargo clippy --workspace --all-targets -- -D warnings
-        continue-on-error: true
       - name: cargo test
         run: cargo test --workspace --all-features --all-targets
 
@@ -58,10 +59,20 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
+          # Each axis accepts an English keyword OR its Japanese equivalent so
+          # Algorave / DH contributors writing in Japanese are not gated out.
           missing=0
-          for axis in materiality subject military realtime cultural-technique; do
-            if ! grep -qi "$axis" <<<"$PR_BODY"; then
-              echo "PR body missing axis: $axis"
+          declare -A axes=(
+            [materiality]='materiality|物質性'
+            [subject]='subject|主体'
+            [military]='military|軍事|state-origin'
+            [realtime]='realtime|real-time|リアルタイム'
+            [cultural-technique]='cultural-technique|cultural technique|文化技術'
+          )
+          for axis in "${!axes[@]}"; do
+            pattern="${axes[$axis]}"
+            if ! grep -qiE "$pattern" <<<"$PR_BODY"; then
+              echo "PR body missing axis: $axis (looked for: $pattern)"
               missing=$((missing+1))
             fi
           done
