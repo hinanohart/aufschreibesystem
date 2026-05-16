@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: CC0-1.0
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: cargo test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+        continue-on-error: true
+      - name: cargo test
+        run: cargo test --workspace --all-features --all-targets
+
+  ethics-audit:
+    name: ethics audit (fixtures/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: ethics audit
+        run: ./scripts/ethics-audit.sh fixtures/
+
+  license-matrix:
+    name: SPDX coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SPDX header presence
+        run: ./scripts/license-matrix-check.sh
+
+  thought-fidelity-template:
+    name: PR description includes thought-fidelity answers
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: verify 5-axis answers present in PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          missing=0
+          for axis in materiality subject military realtime cultural-technique; do
+            if ! grep -qi "$axis" <<<"$PR_BODY"; then
+              echo "PR body missing axis: $axis"
+              missing=$((missing+1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo "thought-fidelity gate — see governance.md §'Kittler thought-fidelity filter'"
+            exit 1
+          fi

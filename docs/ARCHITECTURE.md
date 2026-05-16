@@ -1,0 +1,148 @@
+<!--
+SPDX-License-Identifier: CC-BY-SA-4.0
+SPDX-FileCopyrightText: 2026 Kittler Aufschreibesystem Synthesizer contributors
+-->
+
+# Architecture
+
+> Source: 3-agent R14 exploration + independent critic round, 2026-05-17.
+> Score: 22/25 (ACCEPT-WITH-RESERVATIONS).
+> Detailed exploration record:
+> `~/.claude/projects/-home-runza/memory/project_kittler-oss-architecture-2026-05-17.md`
+
+## 1. The premise
+
+A signal is not data about a thing. A signal *is* the thing the medium does.
+Treating it as a first-class data type in a pattern algebra preserves what
+embedding-based pipelines flatten.
+
+This document describes how that premise becomes code.
+
+## 2. The five layers
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                       provenance (L5)                            │
+│  c2pa-rs + SynthID — three-stage manifest chain (raw / pattern / │
+│  interpretation). MIT.                                           │
+└──────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │
+┌──────────────────────────────────────────────────────────────────┐
+│                       pattern-DSL (L3)                           │
+│  Strudel WRAP (not fork) over WASM. AGPL-3.0 process isolation.  │
+│  Optional AI plugin (L4) is an OUT-OF-PROCESS sidecar — never    │
+│  linked into the algebra.                                        │
+└──────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │
+┌──────────────────────────────────────────────────────────────────┐
+│                       signal-algebra (L2)                        │
+│  Rust cdylib. Source MIT, binary GPL-3.0-or-later (via L1).      │
+│  trait Signal { type Sample; fn sample_rate_hz() -> Option<u64>; │
+│                 fn provenance() -> ProvenanceTag; fn next_frame } │
+│  trait IntoPatternAtom : Signal { fn to_audio() -> Box<dyn ...>; │
+│                                   fn cycle_dur(); to_event_str() }│
+│  Spec is published separately as Apache-2.0 OR MIT.              │
+└──────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │
+┌──────────────────────────────────────────────────────────────────┐
+│                       signal-ingest (L1)                         │
+│  GNU Radio 3.10 (GPL-3.0) for RF / SDR.                          │
+│  Greaseweazle (Unlicense) for floppy flux.                       │
+│  Future: VHS RF, wax cylinder, paper-tape.                       │
+└──────────────────────────────────────────────────────────────────┘
+
+L4 (ai-plugin): Python sidecar, separate repo, opt-in.
+                Qwen3-Omni weights are USER-PULLED — never bundled.
+                IPC over local UNIX socket. Apache-2.0 host wrapper.
+```
+
+## 3. Two end-user binaries, one shared spec
+
+| Binary             | Layers used | License             | Audience              |
+|--------------------|-------------|---------------------|-----------------------|
+| `kittler-archive`  | L1+L2+L5    | GPL-3.0-or-later    | Archivists / DH       |
+| `kittler-stage`    | L3+L5       | AGPL-3.0-or-later   | Algorave / live-coder |
+| (`kittler-ai`)     | L4          | Apache-2.0 + user-pulled model | AI provenance |
+
+The shared `spec/signal-algebra/` is `Apache-2.0 OR MIT` so that third-party
+UIs (e.g., a future Pure-Data binding or a future audio-editor plugin) can
+target it without inheriting GPL.
+
+The umbrella distribution always inherits the strongest license that applies
+to the code it links — declared in `LICENSE` per directory.
+
+## 4. The Tongyi Qianwen user-pull design (architectural constraint)
+
+The Qwen3-Omni model is one of the few open-weight multimodal models suitable
+for our work. Its license (Tongyi Qianwen) imposes commercial-use restrictions
+that we deliberately do not want to inherit into a permissively-licensed OSS.
+
+The architectural answer is **strict bundling negation**:
+
+1. The `kittler-ai` sidecar **never** ships model weights.
+2. On first run the user is shown the Tongyi Qianwen license excerpt verbatim
+   and asked to confirm. Only on confirmation does the sidecar download into
+   `~/.kittler/models/`.
+3. The download URL points to the **official Alibaba release channel**, not
+   a mirror this project controls. We never re-host weights.
+4. If the user declines, the sidecar enters a "no-AI" mode where L1–L3 still
+   function fully; only L4 stages of the C2PA chain become unavailable.
+
+This isolates the license matrix from Tongyi's commercial clause and removes
+the project's distributors from the consent chain.
+
+## 5. CI and reproducibility
+
+- Primary build: `make` + system Rust/Node/Python (low barrier to entry).
+- Reproducibility build: `nix develop` via `flake.nix` (optional, for 5-year
+  archival reproducibility — a Kittlerian materiality concern).
+- CI runner: GitHub Actions. Inside the runner: Nix-based steps so that
+  contributors with Nix get bit-for-bit parity with CI; contributors without
+  Nix get make-based parity.
+
+Bus-factor (governance.md §"Bus-factor declarations") is the dominant risk;
+reproducibility is the secondary risk. Both are *declared* rather than
+*hidden*.
+
+## 6. The autonomous loop (Claude-implemented)
+
+For internal automation (this codebase was bootstrapped autonomously):
+
+```
+edit  →  kluster_code_review_auto  →  cargo test  →  commit
+   ↓
+   on 3rd consecutive failure
+   ↓
+   R8: move WIP to experiments/_wip/<stage>/
+   ↓
+   R14: spawn 3 sub-agents to widen the search
+```
+
+Tier-1 actions (`gh repo create`, `git push`, `cargo publish`) are *never*
+inside the loop. They are gates G1, G3, G4 and require human action.
+
+## 7. Score deductions (honest version)
+
+We finished R14 at 22/25, not 25/25. The −3 break down as:
+
+- −1 **General-purpose** axis. The 2-binary split (archive vs stage) trades
+  some cross-pollination for license cleanliness.
+- −1 **Practicality** axis. Three host languages (Rust + TypeScript + Python)
+  raise the bus-factor; we declare it rather than hide it.
+- −1 **Durability** axis. The Tongyi Qianwen commercial clause is mitigated
+  by the user-pull model but not eliminated; future model-license changes
+  could force L4 to switch base models.
+
+We chose to ship with the deductions visible. That is the Kittlerian move.
+
+## 8. What this is *not* (anti-architecture)
+
+- Not a "single source of truth" — there is no master embedding store.
+- Not a vector database — `IntoPatternAtom` is *syntactic*, not *semantic*.
+- Not a moderation layer — ethics audit is a CI **fail**, not a model output
+  to be soft-filtered.
+- Not a hosted service — `kittler-stage` runs in *your* browser, against
+  *your* signals. We provide no SaaS endpoint.

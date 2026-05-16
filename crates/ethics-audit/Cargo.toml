@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT
+[package]
+name = "ethics-audit"
+description = "Pre-commit fixture auditor: 7 detectors (RDS, SCTE-35, callsign, year, GPS, manifest, language)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+signal-algebra = { path = "../signal-algebra" }
+
+[[bin]]
+name = "ethics-audit"
+path = "src/main.rs"
+
+[lints]
+workspace = true

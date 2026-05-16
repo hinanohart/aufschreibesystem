@@ -1,0 +1,37 @@
+SPDX-License-Identifier: MIT AND GPL-3.0-or-later AND Apache-2.0
+SPDX-FileCopyrightText: 2026 Kittler Aufschreibesystem Synthesizer contributors
+
+# License Matrix
+
+This umbrella file declares the per-crate / per-asset license layout.
+Authoritative SPDX headers live in each file; this index is a guide.
+
+| Path                       | SPDX                           | Notes                                                          |
+|----------------------------|--------------------------------|----------------------------------------------------------------|
+| `crates/signal-algebra/`   | `MIT`                          | Source MIT. Linked binary inherits GPL-3.0-or-later via L1.    |
+| `spec/signal-algebra/`     | `Apache-2.0 OR MIT`            | Dual-licensed spec; permits third-party integration.           |
+| `crates/c2pa-emit/`        | `MIT`                          | Wraps c2pa-rs (MIT).                                           |
+| `bins/kittler-archive/`    | `GPL-3.0-or-later`             | Links GNU Radio, inherits GPL-3.0.                             |
+| `web-stage/`               | `AGPL-3.0-or-later`            | Wraps Strudel (AGPL-3.0). Isolated process boundary.           |
+| `plugins/ai/`              | `Apache-2.0`                   | Sidecar host. Qwen3 model is **user-pulled**, never bundled.   |
+| `signal-ingest/`           | `GPL-3.0-or-later`             | Wraps GNU Radio + Greaseweazle.                                |
+| `fixtures/`                | `CC0-1.0` or `Public Domain`   | Internet Archive PD + synthetic signals only.                  |
+| `docs/`                    | `CC-BY-SA-4.0`                 |                                                                |
+| `governance.md`            | `CC-BY-SA-4.0`                 | Ethical contract; see §G6 proxy interview clause.              |
+
+## Why three licenses?
+
+Kittler's media materiality demands honest license disclosure:
+- **MIT** for the algebra core (so third-party UI integrations can exist)
+- **GPL-3.0** for binaries that link RF/disk-imaging tools (license inheritance honored)
+- **AGPL-3.0** for the web-stage (live-coding venue interactions stay open)
+
+## Qwen3 / Tongyi Qianwen isolation (architectural constraint, not legal opinion)
+
+The `plugins/ai/` sidecar **does not bundle** any Qwen3 model weights.
+The distributed binary never ships Tongyi-Qianwen-licensed artifacts.
+End users opt-in by running `kittler ai pull qwen3-omni` locally — the model
+download is governed solely by the user's acceptance of the Tongyi Qianwen
+license terms, not by the OSS distribution channel.
+
+This isolates the OSS license matrix from Tongyi's commercial-use clause.

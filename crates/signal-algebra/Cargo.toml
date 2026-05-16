@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: MIT
+[package]
+name = "signal-algebra"
+description = "Signal-as-syntax: physical archival signals as first-class pattern-algebra data types"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+[dev-dependencies]
+proptest = "1"
+
+[[example]]
+name = "iq_to_pattern"
+path = "src/examples/iq_to_pattern.rs"
+
+[lints]
+workspace = true

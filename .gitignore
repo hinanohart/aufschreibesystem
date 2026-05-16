@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: CC0-1.0
+
+/target/
+**/*.rs.bk
+Cargo.lock.bak
+
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.pytest_cache/
+
+# AI model artifacts are NEVER committed — they are user-pulled
+plugins/ai/models/
+*.gguf
+*.safetensors
+
+# Build caches
+.cache/
+.direnv/
+
+# Editor scratch
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local secrets — should never exist in this repo, but defense in depth
+.env
+.env.*
+!.env.example
+
+# Generated provenance manifests
+out/
+*.c2pa
