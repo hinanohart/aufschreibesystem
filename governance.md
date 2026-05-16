@@ -90,6 +90,18 @@ merely warned. Broadcast recordings are forbidden as fixtures at any commit
 reachable from `main`. As detectors 4–7 are implemented they inherit the same
 *reject, not warn* semantics — they do not become opt-in.
 
+### Documentation exemptions (v0.1 carve-out, must be re-evaluated in v0.2)
+
+Filenames containing `readme` (case-insensitive) are exempted from detectors
+4 (YearMissing) and 7 (LanguageIdMissing). Rationale: a `README.md` placed
+inside `fixtures/` is documentation about the fixtures, not a fixture itself,
+and forcing it to carry an ISO year + ISO 639-3 language tag would push us
+into the "metadata theater" failure mode (declarations satisfying the form
+without bearing the content). In v0.2 we either move documentation files
+*outside* `fixtures/` or replace this carve-out with a documented MIME-type
+test. Declared here so the carve-out is visible, not silent — per the
+meta-monitor's audit of v0.1.1-local.
+
 ## Memory and provenance (3-stage C2PA chain)
 
 Every artifact emitted by `kittler-archive` carries a C2PA manifest with three

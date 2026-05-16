@@ -97,15 +97,21 @@ the project's distributors from the consent chain.
 ## 5. CI and reproducibility
 
 - Primary build: `make` + system Rust/Node/Python (low barrier to entry).
-- Reproducibility build: `nix develop` via `flake.nix` (optional, for 5-year
-  archival reproducibility — a Kittlerian materiality concern).
-- CI runner: GitHub Actions. Inside the runner: Nix-based steps so that
-  contributors with Nix get bit-for-bit parity with CI; contributors without
-  Nix get make-based parity.
+- Reproducibility build: `nix develop` via `flake.nix` — **v0.1 ships
+  without `flake.lock`**, so the 5-year reproducibility claim is currently
+  *intended*, not *verified*. Generating the lockfile and pinning nixpkgs is
+  a v0.2 task and a precondition for any honest reproducibility marketing.
+- CI runner: GitHub Actions, **make-based only in v0.1**. The original
+  architecture round called for "Nix-based steps in CI"; we did not implement
+  Nix-in-CI in v0.1 because the bootstrap host had no Nix installed and
+  building a CI on a flake we cannot ourselves run locally would have been
+  the literal "tooling we describe but cannot operate" failure mode this
+  project exists to refuse. Nix-in-CI moves to v0.2 alongside the lockfile.
 
 Bus-factor (governance.md §"Bus-factor declarations") is the dominant risk;
 reproducibility is the secondary risk. Both are *declared* rather than
-*hidden*.
+*hidden*. The above paragraph is itself an honesty audit: it documents what
+the architecture round promised and what v0.1 actually delivered.
 
 ## 6. The autonomous loop (Claude-implemented)
 

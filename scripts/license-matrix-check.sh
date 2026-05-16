@@ -9,7 +9,19 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-EXCLUDE_REGEX='(^\.git/|^target/|^node_modules/|/__pycache__/|^Cargo\.lock$|/Cargo\.lock$|^\.gitignore$|^LICENSE$|/package-lock\.json$|/\.cargo-ok$|\.ast\.json$|/MEMORY\.md$|/MANIFEST\.md$|/devcontainer\.json$|\.json$)'
+# Per-file exclusion list — each entry is justified inline so we cannot silently
+# drift toward "exclude everything that fails." Tightening this list is a
+# governance.md change, not a script-only change.
+EXCLUDE_REGEX='(^\.git/|^target/|^node_modules/|/__pycache__/'\
+'|^Cargo\.lock$|/Cargo\.lock$'\
+'|^\.gitignore$'\
+'|^LICENSE$'\
+'|/package-lock\.json$'\
+'|/\.cargo-ok$'\
+'|^\.devcontainer/devcontainer\.json$'\
+'|^\.github/PULL_REQUEST_TEMPLATE\.md$'\
+'|\.ast\.json$|\.derived\.json$|\.interp\.json$'\
+'|/MEMORY\.md$|/MANIFEST\.md$)'
 
 missing=0
 total=0

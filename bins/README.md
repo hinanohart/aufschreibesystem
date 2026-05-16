@@ -32,6 +32,21 @@ the architecture *names* these binaries, the workspace *acknowledges* that they
 are not built yet, and `LICENSE` *describes* the license each will inherit when
 they are built.
 
+## Cargo workspace surface (third drift surface, flagged by META audit)
+
+`Cargo.toml` `[workspace] members` (lines 5–9) does **not** list either
+`bins/kittler-archive` or `bins/kittler-stage`. This is intentional for v0.1:
+adding empty paths would break `cargo check --workspace`. Concretely the
+project has **three surfaces** that mention these binaries and must move
+together when v0.2 lands:
+
+1. `LICENSE` (the per-tree SPDX table) — *names them*.
+2. `bins/README.md` (this file) — *acknowledges them as v0.2 work*.
+3. `Cargo.toml [workspace] members` — *does not list them yet*.
+
+When v0.2 adds the real crates, update all three in the same PR; a partial
+update would silently re-introduce the drift the meta-monitor caught.
+
 ## When to delete this README
 
 Delete this file when both `bins/kittler-archive/` and `bins/kittler-stage/`
