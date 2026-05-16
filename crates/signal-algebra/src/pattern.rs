@@ -26,8 +26,13 @@ pub struct PatternEvent {
 }
 
 /// Opaque value inside a pattern event. Deliberately non-exhaustive.
+///
+/// `#[non_exhaustive]` is intentional and load-bearing: L3 (pattern-DSL)
+/// will add atom kinds as new media-types land. SemVer-major every time
+/// would break every downstream `match`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum PatternAtom {
     /// A single frequency in Hz (e.g., extracted from an IQ tone).
     Frequency {

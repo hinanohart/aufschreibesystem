@@ -18,6 +18,22 @@ embedding-based pipelines flatten.
 
 This document describes how that premise becomes code.
 
+## 1.1 Recommended stack (one-table quick reference)
+
+| Responsibility    | Choice                                | License                                              | Why                              |
+|-------------------|---------------------------------------|------------------------------------------------------|----------------------------------|
+| signal-ingest     | GNU Radio 3.10 + Greaseweazle         | GPL-3.0 / Unlicense                                  | Media-archaeology baseline       |
+| signal-algebra    | Rust cdylib + `trait Signal`          | source MIT / binary GPL-3.0 / spec Apache-2.0 OR MIT | Materiality enforced at type level |
+| pattern-DSL       | TS WASM Strudel wrap                  | AGPL-3.0 (web-stage isolation)                       | Algorave inflow                  |
+| AI plugin         | Python sidecar + Qwen3 user-pull      | Apache-2.0 (host) / Tongyi (model, user-pulled)      | Commercial-clause trap avoidance |
+| provenance        | `c2pa-rs` + SynthID                   | MIT                                                  | Provenance standard              |
+| CI                | `make` + GH Actions (Nix in v0.2)     | —                                                    | Bus-factor + reproducibility     |
+| ethics audit      | 7 detectors CI + pre-commit (v0.2)    | —                                                    | Litigation fallback              |
+
+(Source: architecture-round R14 memo, 2026-05-17. AUDIT-B in v0.1.3-local
+asked for this table to be restored verbatim because the prose alone hid the
+license-vs-tool mapping.)
+
 ## 2. The five layers
 
 ```
@@ -132,7 +148,15 @@ inside the loop. They are gates G1, G3, G4 and require human action.
 
 ## 7. Score deductions (honest version)
 
-We finished R14 at 22/25, not 25/25. The −3 break down as:
+The concept-memo round closed at **23/25** (the original 4-agent R14 score).
+The architecture round closed at **22/25** — a −1 drift driven by the
+2-binary split (`kittler-archive` vs `kittler-stage`) traded for license
+cleanliness. We record the drift explicitly: the architecture round did not
+simply "execute" the concept round, it *cost* a point on the general-purpose
+axis to make the license matrix honest. A reader who only sees the 22/25
+figure should also know that 23/25 was the moving-from point.
+
+The architecture-round −3 break down as:
 
 - −1 **General-purpose** axis. The 2-binary split (archive vs stage) trades
   some cross-pollination for license cleanliness.

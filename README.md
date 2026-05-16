@@ -12,6 +12,23 @@ audio become first-class data types in a TidalCycles/Strudel-style pattern
 algebra. The medium is not flattened into an embedding; it stays a signal until
 the moment a human chooses to interpret it.
 
+## Three-line use case
+
+1. *Archivist:* point `kittler-archive` at a captured RF burst → get a Strudel-shaped pattern AST whose `provenance` field carries the device fingerprint and an unbroken C2PA chain back to the raw IQ bytes.
+2. *Algorave performer:* drop that AST into `kittler-stage` and improvise live against the medium itself — the audience hears the wax cylinder and the live pattern together, not one in place of the other.
+3. *AI-provenance practitioner:* if (and only if) you opt in to the user-pulled Qwen3-Omni sidecar, the C2PA chain grows a third stage — model id + prompt hash + SynthID — so an AI interpretation is *visibly* an AI interpretation.
+
+## Why this exists (positioning)
+
+The EU AI Act (Regulation 2024/1689) carves a research-and-cultural-heritage
+clause that presumes pipelines treating archival media as analyzable signals
+rather than as text-equivalents. The "OCR → embedding → RAG" stack widely
+deployed for "AI for cultural heritage" *flattens* media into embeddings at
+the first step, which forecloses the signal-level provenance that cultural-
+heritage exemptions are written to enable. This OSS is a technical answer to
+that gap: keep the medium addressable, keep the C2PA chain rooted in raw
+bytes, keep AI interpretation as an optional, isolated, opt-in stage.
+
 ## Status
 
 - **v0.1 MVP (local)** — IQ file → `Signal` trait → `IntoPatternAtom` →

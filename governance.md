@@ -20,13 +20,20 @@ governance is itself a Kittlerian failure: pretending the symbolic order
 | G3 | `git push origin main` (and force-push)       | R13 — irreversibility threshold; a human must press send.      | 0%         |
 | G4 | `cargo publish` / `npm publish`               | R13 — once published, you cannot un-publish a name.            | 0%         |
 | G5 | Qwen3-Omni sidecar default-on vs default-off  | UX choice with commercial-license consequences. See `LICENSE`. | 30%        |
-| G6 | User-interview completion                     | See §"G6 — the proxy interview clause" below.                  | 0%         |
+| G6 | User-interview completion (4 audiences)       | See §"G6 — the proxy interview clause" below.                  | 0%         |
 | G7 | "Thought self-criticism" merge gate           | Every PR must clear the 5-axis fidelity filter.                | template   |
 
 ## G6 — the proxy interview clause (思想的二重底の試金石)
 
-Pre-v0.1 the architecture required interviews with three audiences: a
-media-archaeology archivist, an Algorave live-coder, and a DH researcher.
+Pre-v0.1 the architecture required interviews with **four** audiences (matching
+the four-audience claim in `README.md`): a media-archaeology archivist, an
+Algorave live-coder, a digital-humanities researcher, **and an AI-provenance
+practitioner** (e.g., a C2PA implementer or SynthID-watermark reviewer). The
+fourth audience was previously listed inconsistently — `governance.md` named
+three, `README.md` named four — and AUDIT-A caught the silent drop; it is
+restored here so the architecture's four-population framing is enforced by
+the gate, not merely asserted by the README.
+
 If 24 hours pass without a human respondent, the architecture's contingency
 was: substitute Kittler's own 1999 *Wizards of OS 1* lecture (Internet Archive)
 as a proxy "respondent."
@@ -75,15 +82,15 @@ shape exists so that contributors cannot quietly add a fixture that the
 project will later need to retract. The honest line is at
 `crates/ethics-audit/src/lib.rs:36`.
 
-| # | Detector                                       | v0.1 status                                  |
-|---|-----------------------------------------------|----------------------------------------------|
-| 1 | RDS PS / PTY presence in IQ samples           | filename-scan (real RDS decoder in v0.2)     |
-| 2 | SCTE-35 commercial-cue markers                | filename-scan (real SCTE-35 decoder in v0.2) |
-| 3 | Station callsign text in metadata             | filename + 5-callsign hardcoded list         |
-| 4 | Recording-year ISO date (PD vs in-copyright)  | enum variant only, no detector yet (v0.2)    |
-| 5 | Colonial-context GPS metadata                 | enum variant only, no detector yet (v0.2)    |
-| 6 | Missing C2PA manifest on derived artifacts    | enum variant only, no detector yet (v0.2)    |
-| 7 | Recording-location language ID                | enum variant only, no detector yet (v0.2)    |
+| # | Detector                                       | v0.1 status                                                                         |
+|---|-----------------------------------------------|-------------------------------------------------------------------------------------|
+| 1 | RDS PS / PTY presence in IQ samples           | filename-scan heuristic; real RDS decoder in v0.2                                   |
+| 2 | SCTE-35 commercial-cue markers                | filename-scan heuristic; real SCTE-35 decoder in v0.2                               |
+| 3 | Station callsign text in metadata             | filename + 5-callsign hardcoded list                                                |
+| 4 | Recording-year ISO date (PD vs in-copyright)  | filename ISO-year regex (1800–2099); real metadata reader in v0.2                   |
+| 5 | Colonial-context GPS metadata                 | filename token list + consent-marker carve-out; real GPS extractor in v0.2          |
+| 6 | Missing C2PA manifest on derived artifacts    | `.ast.json`/`.derived.json`/`.interp.json` sibling-file check; real c2pa-rs in v0.2 |
+| 7 | Recording-location language ID                | filename `lang-` token check; real ISO 639-3 lookup in v0.2                         |
 
 A fixture flagged by any *implemented* detector is **rejected by CI**, not
 merely warned. Broadcast recordings are forbidden as fixtures at any commit

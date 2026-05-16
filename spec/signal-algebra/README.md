@@ -35,7 +35,11 @@ trait Signal
 
 trait IntoPatternAtom : Signal
   fn cycle_duration()  -> Duration
-  fn to_audio()        -> Box<dyn Signal<Sample = f32>>       // materiality enforced
+  fn to_audio()        -> Box<dyn Signal<Sample = f32, Time = u64>>
+                                                               // materiality enforced. Returns a
+                                                               // fresh signal starting at t=0 — see
+                                                               // signal-algebra crate docs on rewind
+                                                               // semantics.
   fn to_event_stream() -> EventStream                          // for L3 pattern AST
 ```
 

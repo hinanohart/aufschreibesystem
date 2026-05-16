@@ -76,3 +76,43 @@ if the executor and the architecture memo both omit the same thing in the
 same way, no auditor here will catch it. This is why the project's
 *human-gated* G6 (user interview) remains mandatory and is not
 substitutable by any number of monitor agents.
+
+## Appendix — agent identifiers (preserved from the bootstrap rounds)
+
+These IDs are the audit anchor for the v0.1 bootstrap. Re-invoking by ID
+preserves continuity across sessions; new agent IDs would lose the audit
+chain. AUDIT-B in v0.1.3-local asked for this list to be restored.
+
+**Concept round (2026-05-17, 4-agent + critic R14):**
+- Agent A (media-archaeology + signal): `ae0801730b169b6f6`
+- Agent B (multimodal AI): `ac361c42cb08b48a9`
+- Agent C (cultural-technique + critical-computing): `ae19264d7ad5504f0`
+- Critic (5-axis integration): `a2ea116002b7649a5`
+
+**Architecture round (2026-05-17, 3-agent + critic R14):**
+- Agent D (core data flow): `a6161b5eeca24b7eb`
+- Agent E (autonomous pipeline): `a2d328c97a0ef5d9c`
+- Agent F (distribution / license): `a653b2f96aadc63ae`
+- Critic (integration): `af3aef2b069daed52`
+
+**Bootstrap supervisor rounds (this session):**
+- MONITOR-1 (architecture-fidelity, v0.1.0→v0.1.1): `abb2f1aab57c5a172`
+- MONITOR-2 (build/fabrication verifier, v0.1.0→v0.1.1): `a9723dea27b781d06`
+- META-MONITOR (v0.1.1→v0.1.2): `a09efd3c9906214cf`
+- AUDIT-A (concept coverage, v0.1.2→v0.1.3): `a3e0993ac8b294b80`
+- AUDIT-B (architecture coverage, v0.1.2→v0.1.3): `a26ddc14b8b260003`
+- AUDIT-C (code polish, v0.1.2→v0.1.3): `a497bbdfcdd48c0da`
+
+## Appendix — notification channel status
+
+The architecture memo's "first 1 hour" step 7 named a PushNotification
+channel (Mastodon DM / email) for G2–G7 user notifications with a 24 h
+no-response → proxy-mode degrade. **v0.1 does NOT configure any notification
+channel.** The degrade behavior is documented in `governance.md` §G6 but the
+channel itself is not constructed because (a) configuring an outbound channel
+for a `-local` build would attach the OSS to a specific endpoint we do not
+own, and (b) the channel-of-record decision should belong to the user who
+runs `gh repo create` (G1), not to the bootstrap executor. v0.2 PR will
+either add a `governance/notifications.toml` schema or formally drop the
+notification gate from the seven-gate model.
+

@@ -9,7 +9,12 @@ license.workspace = true
 repository.workspace = true
 
 [lib]
-crate-type = ["rlib", "cdylib"]
+# v0.1 ships rlib only. The architecture memo named cdylib but there is no
+# `#[no_mangle] extern "C"` surface yet — a cdylib without a C ABI just
+# produces a confusing build artifact and slows CI. v0.2 introduces the C
+# ABI (for the `kittler-archive` binary's plugin interface) and re-adds
+# `cdylib` at the same PR.
+crate-type = ["rlib"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

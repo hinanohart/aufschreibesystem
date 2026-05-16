@@ -9,7 +9,12 @@
 use serde::{Deserialize, Serialize};
 
 /// Stable identifier for the origin of a signal.
+///
+/// `#[non_exhaustive]` so that v0.2 adapters (paper-tape optical, VHS RF,
+/// etc.) can add variants without forcing every downstream `match` arm to
+/// rev.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum OriginProtocol {
     /// Software-defined radio capture.
     Rf,

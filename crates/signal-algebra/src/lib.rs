@@ -56,6 +56,14 @@ impl std::error::Error for SignalErr {}
 ///
 /// Implementations MUST return a stable `provenance()` for the lifetime of the signal:
 /// the medium identity does not change mid-stream.
+///
+/// # Dyn-compatibility
+///
+/// This trait MUST remain object-safe (dyn-compatible). `IntoPatternAtom::to_audio`
+/// returns a `Box<dyn Signal<Sample = f32, Time = u64>>` for the materiality
+/// round-trip; adding a generic method or an associated `const` to `Signal`
+/// would break that compile path. Test: `cargo test -p signal-algebra` must
+/// continue to type-check `Box::new(SyntheticIq::new(...))` as `Box<dyn Signal>`.
 pub trait Signal: Send + 'static {
     /// Element type of the sample buffer (`f32` for audio, `Complex32` for IQ, etc.).
     type Sample: Copy + Send;

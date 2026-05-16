@@ -6,6 +6,7 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 use ethics_audit::{audit, Finding};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::{env, fs, process};
 
@@ -16,8 +17,12 @@ fn main() {
         .map_or_else(|| PathBuf::from("fixtures/"), PathBuf::from);
 
     if !dir.exists() {
+        // Exit non-zero so a typo in a CI invocation surfaces rather than
+        // silently passing. The OSS's own ethics policy (governance.md §5)
+        // demands that audit failure modes be loud, not quiet — that
+        // applies to the audit itself, not only to its findings.
         eprintln!("ethics-audit: directory does not exist: {}", dir.display());
-        process::exit(0);
+        process::exit(2);
     }
 
     let mut total = 0usize;
@@ -54,18 +59,34 @@ fn describe(f: &Finding) -> String {
             format!("C2PA manifest missing (expected at {expected_at})")
         }
         Finding::LanguageIdMissing => "recording-location language ID missing".into(),
+        // `Finding` is `#[non_exhaustive]`; a v0.2 detector variant must be
+        // labeled at the CLI even before this match arm is updated.
+        _ => "unknown finding (CLI needs updating for new Finding variant)".into(),
     }
 }
 
 fn walk(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let mut stack = vec![root.to_path_buf()];
+    // Symlink-loop guard: track canonical directory paths we have already
+    // descended. A symlink that points back to its own parent would otherwise
+    // spin until OOM.
+    let mut visited_dirs: HashSet<PathBuf> = HashSet::new();
     while let Some(p) = stack.pop() {
         let Ok(rd) = fs::read_dir(&p) else { continue };
         for e in rd.flatten() {
             let path = e.path();
-            if path.is_dir() {
-                stack.push(path);
+            let Ok(file_type) = e.file_type() else { continue };
+            if file_type.is_symlink() {
+                // Skip symlinks entirely — auditing through them risks both
+                // loops and accidentally reaching outside the fixture tree.
+                continue;
+            }
+            if file_type.is_dir() {
+                let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
+                if visited_dirs.insert(canonical) {
+                    stack.push(path);
+                }
             } else {
                 out.push(path);
             }

@@ -21,6 +21,9 @@ pub struct SyntheticIq {
     frequency_hz: f64,
     duration: Duration,
     phase: f64,
+    /// Pre-computed phase advance per emitted sample, cached in `new()` so
+    /// the hot loop avoids a `2π * f / fs` divide per call.
+    step: f64,
     samples_emitted: u64,
     total_samples: u64,
 }
@@ -29,17 +32,25 @@ impl SyntheticIq {
     /// Construct a synthetic IQ source.
     ///
     /// # Panics
-    /// Panics if `sample_rate_hz` is 0 or `duration` is zero.
+    /// Panics if `sample_rate_hz` is 0 or `duration` is zero. Also panics if
+    /// `duration.as_millis()` does not fit in `u64` (i.e., duration above
+    /// ~584 million years; practically unreachable but checked rather than
+    /// silently truncated).
     #[must_use]
     pub fn new(sample_rate_hz: u64, frequency_hz: f64, duration: Duration) -> Self {
         assert!(sample_rate_hz > 0, "sample rate must be > 0");
         assert!(!duration.is_zero(), "duration must be > 0");
-        let total = sample_rate_hz.saturating_mul(duration.as_millis() as u64) / 1_000;
+        let duration_ms_u128 = duration.as_millis();
+        let duration_ms = u64::try_from(duration_ms_u128)
+            .unwrap_or_else(|_| panic!("duration too large for u64 milliseconds"));
+        let total = sample_rate_hz.saturating_mul(duration_ms) / 1_000;
+        let step = 2.0 * std::f64::consts::PI * frequency_hz / (sample_rate_hz as f64);
         Self {
             sample_rate_hz,
             frequency_hz,
             duration,
             phase: 0.0,
+            step,
             samples_emitted: 0,
             total_samples: total,
         }
@@ -64,11 +75,10 @@ impl Signal for SyntheticIq {
         if self.samples_emitted >= self.total_samples {
             return Err(SignalErr::Eof);
         }
-        let step = 2.0 * std::f64::consts::PI * self.frequency_hz / (self.sample_rate_hz as f64);
         let to_emit = out.len().min(self.remaining() as usize);
         for slot in out.iter_mut().take(to_emit) {
             *slot = self.phase.sin() as f32;
-            self.phase += step;
+            self.phase += self.step;
             if self.phase > std::f64::consts::TAU {
                 self.phase -= std::f64::consts::TAU;
             }
@@ -90,6 +100,12 @@ impl IntoPatternAtom for SyntheticIq {
 
     fn to_audio(&self) -> Box<dyn Signal<Sample = f32, Time = u64>> {
         // Materiality: the pattern can always be re-grounded into audio.
+        //
+        // CONTRACT: the returned signal starts at t=0 — accumulated phase
+        // from `self` is NOT carried over. This is intentional for v0.1
+        // because the synthetic source is deterministic given (rate, freq,
+        // duration). For non-deterministic L1 captures (RF / floppy flux),
+        // v0.2 will need a continuation-vs-rewind decision in the spec.
         Box::new(Self::new(
             self.sample_rate_hz,
             self.frequency_hz,
@@ -114,6 +130,36 @@ impl IntoPatternAtom for SyntheticIq {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Property: total samples emitted equal `sample_rate_hz * duration_ms / 1000`
+        /// for any reasonable (rate, duration) combination, regardless of the chosen
+        /// per-call buffer size.
+        #[test]
+        fn property_total_samples_match_rate_times_duration(
+            sample_rate_hz in 8_000u64..=192_000u64,
+            duration_ms in 1u64..=2_000u64,
+            buf_size in 1usize..=4_096usize,
+        ) {
+            let mut sig = SyntheticIq::new(sample_rate_hz, 440.0, Duration::from_millis(duration_ms));
+            let expected = sample_rate_hz * duration_ms / 1_000;
+            let mut buf = vec![0.0f32; buf_size];
+            let mut total: u64 = 0;
+            loop {
+                let before = sig.remaining();
+                match sig.next_frame(&mut buf) {
+                    Ok(_) => total += before - sig.remaining(),
+                    Err(SignalErr::Eof) => break,
+                    Err(_) => prop_assert!(false, "unexpected advance error"),
+                }
+                if sig.remaining() == 0 {
+                    break;
+                }
+            }
+            prop_assert_eq!(total, expected);
+        }
+    }
 
     #[test]
     fn synthetic_signal_emits_expected_sample_count() {

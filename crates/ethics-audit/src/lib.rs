@@ -13,7 +13,11 @@
 use std::path::Path;
 
 /// The seven audit findings.
+///
+/// `#[non_exhaustive]` so adding an 8th detector in v0.2 is not a
+/// SemVer-major break for every downstream `match`.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Finding {
     /// RDS PS/PTY bytes detected in IQ payload header.
     RdsPresent,
@@ -135,6 +139,12 @@ pub fn audit(path: &Path) -> Vec<Finding> {
 
 /// Returns true if the filename contains a plausible 4-digit ISO-year token
 /// (1800–2099) bounded by non-digit characters.
+///
+/// **ASCII-only assumption.** All seven detectors expect a previously
+/// lower-cased ASCII filename slice. Non-ASCII filenames (e.g.,
+/// `Köln-2020-lang-deu.iq`) flow through `to_ascii_lowercase` unchanged,
+/// which is *safe* — the digit and tag detection logic only inspects ASCII
+/// byte ranges — but v0.2 should add explicit normalization.
 fn has_iso_year_token(name: &str) -> bool {
     let bytes = name.as_bytes();
     for i in 0..bytes.len().saturating_sub(3) {
@@ -143,10 +153,13 @@ fn has_iso_year_token(name: &str) -> bool {
             let before_ok = i == 0 || !bytes[i - 1].is_ascii_digit();
             let after_ok = i + 4 == bytes.len() || !bytes[i + 4].is_ascii_digit();
             if before_ok && after_ok {
-                let year: u32 = std::str::from_utf8(win)
-                    .ok()
-                    .and_then(|s| s.parse().ok())
-                    .unwrap_or(0);
+                // Compute the year directly from the 4 ASCII digit bytes
+                // without going through Option chains — `win` is invariant
+                // and each digit is in `b'0'..=b'9'` by the guard above.
+                let year = u32::from(win[0] - b'0') * 1000
+                    + u32::from(win[1] - b'0') * 100
+                    + u32::from(win[2] - b'0') * 10
+                    + u32::from(win[3] - b'0');
                 if (1800..=2099).contains(&year) {
                     return true;
                 }

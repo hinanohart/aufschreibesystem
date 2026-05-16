@@ -19,8 +19,13 @@ use sha2::{Digest, Sha256};
 use signal_algebra::{EventStream, ProvenanceTag};
 
 /// One stage in the provenance chain.
+///
+/// `#[non_exhaustive]` so that adding a fourth stage in v0.2 (e.g., a
+/// distribution / re-publication stage) is a minor-version change, not
+/// a SemVer-major break for every downstream `match`.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "stage", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Stage {
     /// L1 — raw bytes from the medium.
     Raw {
@@ -96,6 +101,11 @@ impl Manifest {
     }
 
     /// Append the (mandatory-if-AI-was-applied) interpretation stage.
+    ///
+    /// Infallible — the prompt is passed pre-bytes and the model identifier
+    /// is `String`-shaped, so no serialization is performed at append time.
+    /// Compare with [`Manifest::add_pattern`], which serializes an
+    /// `EventStream` and returns the serde error.
     pub fn add_interpretation(
         &mut self,
         model_id: impl Into<String>,
@@ -111,22 +121,35 @@ impl Manifest {
         });
     }
 
-    /// Validate basic chain ordering: Raw must precede Pattern must precede Interpretation.
+    /// Validate chain ordering: stages MUST appear in the exact sequence
+    /// Raw (1) → Pattern (2) → Interpretation (3), with **no stage skipped**.
+    ///
+    /// Skipping the Pattern stage (Raw → Interpretation directly) is rejected:
+    /// the materiality guarantee depends on every AI interpretation being
+    /// re-anchorable to a pattern-stage hash, which in turn re-anchors to
+    /// raw bytes. A chain that jumps Raw → Interpretation breaks that
+    /// re-anchoring and is therefore non-conformant.
+    ///
+    /// A `Raw`-only chain (single stage) is well-ordered.
+    /// A `Raw → Pattern` chain (two stages) is well-ordered.
+    /// A `Raw → Pattern → Interpretation` chain is well-ordered.
+    /// Anything else is rejected.
     #[must_use]
     pub fn is_well_ordered(&self) -> bool {
-        let mut state = 0u8;
+        let mut next_required = 1u8;
         for s in &self.stages {
             let level = match s {
                 Stage::Raw { .. } => 1,
                 Stage::Pattern { .. } => 2,
                 Stage::Interpretation { .. } => 3,
             };
-            if level <= state {
+            if level != next_required {
                 return false;
             }
-            state = level;
+            next_required = level + 1;
         }
-        state >= 1
+        // At least one stage is required.
+        next_required > 1
     }
 }
 
@@ -172,5 +195,26 @@ mod tests {
     fn raw_only_is_well_ordered() {
         let m = Manifest::from_raw(b"hello", ProvenanceTag::synthetic(48_000));
         assert!(m.is_well_ordered());
+    }
+
+    #[test]
+    fn raw_then_interpretation_skipping_pattern_is_rejected() {
+        // Materiality requires every interpretation to be re-anchorable to a
+        // pattern hash, which re-anchors to raw bytes. Skipping pattern breaks
+        // re-anchoring and must be rejected.
+        let mut m = Manifest::from_raw(b"hello", ProvenanceTag::synthetic(48_000));
+        m.add_interpretation("qwen3-omni:7b", b"prompt", true, "0.1.0");
+        assert!(!m.is_well_ordered());
+    }
+
+    #[test]
+    fn pattern_without_raw_is_rejected() {
+        let mut m = Manifest {
+            spec: "kittler-c2pa-shape/0.1.0".into(),
+            stages: vec![],
+        };
+        let sig = SyntheticIq::new(48_000, 440.0, Duration::from_secs(1));
+        m.add_pattern(&sig.to_event_stream(), "0.1.0").unwrap();
+        assert!(!m.is_well_ordered());
     }
 }
