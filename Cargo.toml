@@ -13,10 +13,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
 license = "MIT"
-# Placeholder. Real `repository` URL gets set by gate G1 (gh repo create) per
-# governance.md. cargo publish (gate G4) would reject this placeholder, which
-# is intentional — publishing while still local-only must fail loudly.
-repository = "https://example.invalid/not-yet-published-see-governance.md-G1"
+repository = "https://github.com/hinanohart/aufschreibesystem"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "warn"

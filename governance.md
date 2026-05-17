@@ -23,6 +23,33 @@ governance is itself a Kittlerian failure: pretending the symbolic order
 | G6 | User-interview completion (4 audiences)       | See §"G6 — the proxy interview clause" below.                  | 0%         |
 | G7 | "Thought self-criticism" merge gate           | Every PR must clear the 5-axis fidelity filter.                | template   |
 
+## Branch protection (set at G3 completion)
+
+After G3 (the first push), `main` is protected with the following rules
+(verified by `gh api repos/<owner>/<repo>/branches/main/protection`):
+
+- **Required status checks (strict)**: `cargo test (ubuntu-latest)`,
+  `cargo test (macos-latest)`, `ethics audit (fixtures/)`, `SPDX coverage`.
+  Strict mode requires the PR branch to be up-to-date with `main` before
+  status checks are evaluated.
+- **Linear history required** — merge commits forbidden; PRs squash or rebase.
+- **Force pushes disabled** — past incidents (referenced in the kluster-degrade
+  failure mode) showed that force push to a protected default branch is a
+  fabrication-axis hazard. The setting is `allow_force_pushes: false`.
+- **Branch deletion disabled** — `main` cannot be deleted.
+- **Conversation resolution required** — every PR review comment must be
+  resolved before merge.
+- **`enforce_admins: false`** — the human gate-runner (and only the human
+  gate-runner) may emergency-bypass. Claude does NOT have admin token
+  authority for this repo: per R13, Tier-1 actions remain human even after
+  the initial push.
+
+The settings are not stored in this file alone (GitHub is the source of
+truth); they are restated here so a clone of the repo without GitHub access
+can audit what `main` is supposed to look like. Run
+`./scripts/handoff-tier1-gates.sh status` after any branch-protection change
+to update the operator's mental model.
+
 ## G6 — the proxy interview clause (思想的二重底の試金石)
 
 Pre-v0.1 the architecture required interviews with **four** audiences (matching
