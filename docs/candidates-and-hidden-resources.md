@@ -5,10 +5,23 @@ SPDX-FileCopyrightText: 2026 Kittler Aufschreibesystem Synthesizer contributors
 
 # Candidate primitives & hidden resources
 
-The concept memo (R14, 2026-05-17) graded ~25 candidate primitives across
-three domains and named ~5 "easy to miss" resources. The MVP shipped a subset.
-This file records what was named, what status it has at v0.1, and **why** —
-so a future contributor can re-evaluate without re-doing the search.
+The concept memo (R14, 2026-05-17) graded **25 candidate primitives** across
+three domains and named **5 "easy to miss" resources**. The MVP shipped a
+subset. This file records what was named, what status it has at v0.1, and
+**why** — so a future contributor can re-evaluate without re-doing the search.
+
+**v0.1.5 honest count.** The tables below list **16 primitives** (adopted +
+deferred + explicitly rejected) plus the **5 hidden resources** = 21 entries
+on this page. The remaining 9 candidates from the original 25 were
+**concept-only mentions** the architecture round did not promote to its own
+row because each was already subsumed under a listed entry (e.g. the original
+memo named both *SDR# / SDRangel / GQRX* as separate UI candidates for the
+RF chain — collapsed here into "GNU Radio 3.10" because the SDR application
+layer is not part of v0.1's signal-algebra scope). The full pre-pruning list
+lives in the concept-memo (`~/.claude/projects/-home-runza/memory/project_kittler-oss-architecture-2026-05-17.md`,
+external to this repository). If you are a future contributor reading this
+without access to that memo, treat the prune as a v0.2 re-evaluation
+opportunity rather than a settled decision.
 
 ## Media-archaeology + signal primitives
 

@@ -67,6 +67,15 @@ fn describe(f: &Finding) -> String {
 
 fn walk(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
+    // v0.1.5 (M5 fix): anchor a canonical root so symlink targets can be
+    // checked against the fixture tree boundary.
+    let Ok(root_canonical) = root.canonicalize() else {
+        eprintln!(
+            "ethics-audit: cannot canonicalize {} — aborting walk",
+            root.display()
+        );
+        process::exit(2);
+    };
     let mut stack = vec![root.to_path_buf()];
     // Symlink-loop guard: track canonical directory paths we have already
     // descended. A symlink that points back to its own parent would otherwise
@@ -76,10 +85,40 @@ fn walk(root: &Path) -> Vec<PathBuf> {
         let Ok(rd) = fs::read_dir(&p) else { continue };
         for e in rd.flatten() {
             let path = e.path();
-            let Ok(file_type) = e.file_type() else { continue };
+            let Ok(file_type) = e.file_type() else {
+                continue;
+            };
             if file_type.is_symlink() {
-                // Skip symlinks entirely — auditing through them risks both
-                // loops and accidentally reaching outside the fixture tree.
+                // v0.1.5 (M5 fix): resolve and audit instead of silently
+                // skipping. A fixture-as-symlink-to-/etc/passwd previously
+                // disappeared from the audit; now it surfaces as a REJECT.
+                let Ok(resolved) = path.canonicalize() else {
+                    eprintln!(
+                        "REJECT {}: symlink target cannot be resolved",
+                        path.display()
+                    );
+                    out.push(path);
+                    continue;
+                };
+                if !resolved.starts_with(&root_canonical) {
+                    eprintln!(
+                        "REJECT {}: symlink escapes fixture tree (target: {})",
+                        path.display(),
+                        resolved.display()
+                    );
+                    out.push(path);
+                    continue;
+                }
+                let Ok(meta) = fs::metadata(&resolved) else {
+                    continue;
+                };
+                if meta.is_dir() {
+                    if visited_dirs.insert(resolved.clone()) {
+                        stack.push(resolved);
+                    }
+                } else {
+                    out.push(resolved);
+                }
                 continue;
             }
             if file_type.is_dir() {

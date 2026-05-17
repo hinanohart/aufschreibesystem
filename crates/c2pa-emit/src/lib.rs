@@ -59,7 +59,12 @@ pub enum Stage {
 }
 
 /// A three-stage provenance manifest.
+///
+/// `#[non_exhaustive]` so adding a `signature` / `attestation` field in v0.2
+/// is a minor-version bump rather than a SemVer-major break for every
+/// downstream pattern-match or struct-literal construction.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Manifest {
     /// Schema identifier, e.g., `kittler-c2pa-shape/0.1.0`.
     pub spec: String,

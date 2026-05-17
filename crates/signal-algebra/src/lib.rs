@@ -33,7 +33,12 @@ pub use provenance::{OriginProtocol, ProvenanceTag};
 pub use synthetic::SyntheticIq;
 
 /// Errors returned by `Signal::next_frame`.
+///
+/// `#[non_exhaustive]` so v0.2 can add `Backpressure`, `Underrun`, or
+/// transport-specific variants without forcing every downstream `match`
+/// arm to rev a major version.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum SignalErr {
     /// The signal reached its natural end.
     Eof,
@@ -96,6 +101,22 @@ pub trait IntoPatternAtom: Signal {
     ///
     /// This method may not be implemented as `unimplemented!()`. The compile-time
     /// presence of this trait is the materiality guarantee.
+    ///
+    /// # Rewind contract (v0.1)
+    ///
+    /// The returned `Signal` **starts at `t = 0`**. Accumulated mutable state in
+    /// `self` (e.g. phase, decoder cursor) is NOT carried into the audio stream;
+    /// each call to `to_audio()` produces a fresh, idempotent re-grounding of
+    /// the pattern as the source defines it.
+    ///
+    /// Rationale: in v0.1 all `IntoPatternAtom` impls are deterministic given
+    /// their constructor arguments (see `SyntheticIq`), so a rewound replay
+    /// matches the original. For non-deterministic L1 captures (RF / floppy
+    /// flux) v0.2 will introduce a `to_audio_continuation()` variant; the
+    /// rewind-vs-continuation choice will then be explicit in the type system.
+    ///
+    /// Callers that need two cursors over the same audio MUST call
+    /// `to_audio()` twice; do NOT alias the returned `Box<dyn Signal>`.
     fn to_audio(&self) -> Box<dyn Signal<Sample = f32, Time = u64>>;
 
     /// Yield the pattern as discrete events for the Strudel-style AST.

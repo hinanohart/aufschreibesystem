@@ -31,10 +31,18 @@ bytes, keep AI interpretation as an optional, isolated, opt-in stage.
 
 ## Status
 
-- **v0.1 MVP (local)** — IQ file → `Signal` trait → `IntoPatternAtom` →
+- **v0.1.5-local** — IQ file → `Signal` trait → `IntoPatternAtom` →
   Strudel-style AST. Synthetic-only fixtures. No broadcast recordings.
+- **Local toolchain status:** `cargo test --workspace` and
+  `cargo clippy -- -D warnings` are green on the maintainer's host.
+- **CI status:** `.github/workflows/ci.yml` is *configured* but has never
+  executed — the repository has not been pushed to GitHub (G1/G3 are
+  Tier-1 human gates per `governance.md`). "CI green" will only be true
+  after the first push. See `docs/release-status.md`.
 - **Not yet published** — see `governance.md` for the seven gates (G1–G7)
   every release must clear, and why some of them are *deliberately* manual.
+  A one-file hand-off script for the human-gated steps lives at
+  `scripts/handoff-tier1-gates.sh`.
 
 ## What this is for
 

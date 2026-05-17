@@ -105,14 +105,20 @@ chain. AUDIT-B in v0.1.3-local asked for this list to be restored.
 
 ## Appendix — notification channel status
 
-The architecture memo's "first 1 hour" step 7 named a PushNotification
-channel (Mastodon DM / email) for G2–G7 user notifications with a 24 h
-no-response → proxy-mode degrade. **v0.1 does NOT configure any notification
-channel.** The degrade behavior is documented in `governance.md` §G6 but the
-channel itself is not constructed because (a) configuring an outbound channel
-for a `-local` build would attach the OSS to a specific endpoint we do not
-own, and (b) the channel-of-record decision should belong to the user who
-runs `gh repo create` (G1), not to the bootstrap executor. v0.2 PR will
-either add a `governance/notifications.toml` schema or formally drop the
-notification gate from the seven-gate model.
+**v0.1 does NOT configure any outbound notification channel.** The G6 24-hour
+no-response → proxy-mode degrade is documented in `governance.md` §G6 and is
+satisfied entirely by inspecting `docs/release-status.md`; no Mastodon DM,
+email, or webhook is wired. The reasons:
+
+1. Configuring an outbound endpoint for a `-local` build would attach the
+   OSS to an endpoint we do not own.
+2. The channel-of-record decision belongs to the user who runs `gh repo create`
+   (G1), not to the bootstrap executor.
+
+A v0.2 PR will either add a `governance/notifications.toml` schema or formally
+drop the notification gate from the seven-gate model — whichever the first
+real release contributor proposes. (Earlier drafts of this file cross-referenced
+an external architecture memo for a "PushNotification" name; that reference was
+removed in v0.1.5 because nothing in the repo could substantiate it, and a
+dead pointer is itself a fabrication-axis hazard.)
 

@@ -8,7 +8,7 @@ Authoritative SPDX headers live in each file; this index is a guide.
 
 | Path                       | SPDX                           | Notes                                                          |
 |----------------------------|--------------------------------|----------------------------------------------------------------|
-| `crates/signal-algebra/`   | `MIT`                          | Source MIT. Linked binary inherits GPL-3.0-or-later via L1.    |
+| `crates/signal-algebra/`   | `MIT`                          | Source MIT. v0.1 ships as `rlib` only (cdylib in v0.2 with the C ABI). Linked binary inherits GPL-3.0-or-later via L1. |
 | `spec/signal-algebra/`     | `Apache-2.0 OR MIT`            | Dual-licensed spec; permits third-party integration.           |
 | `crates/c2pa-emit/`        | `MIT`                          | Wraps c2pa-rs (MIT).                                           |
 | `bins/kittler-archive/`    | `GPL-3.0-or-later` (v0.2)      | Will link GNU Radio, inherits GPL-3.0. v0.1: absent, see `bins/README.md`. |

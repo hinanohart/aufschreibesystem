@@ -33,7 +33,13 @@ pub enum OriginProtocol {
 /// Provenance tag attached to every `Signal`.
 ///
 /// This struct is `Copy` so that propagating it through the pipeline is free.
+///
+/// `#[non_exhaustive]` so adding a v0.2 field (e.g., `signature_chain_id`,
+/// `firmware_rev`) is a minor bump. Downstream callers must construct via
+/// `ProvenanceTag::synthetic(...)` or a future builder; struct literals are
+/// not part of the public API.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct ProvenanceTag {
     /// 32-byte device fingerprint (Ed25519 public key, or all zeros for synthetic).
     pub device_fingerprint: [u8; 32],

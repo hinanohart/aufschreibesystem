@@ -48,7 +48,11 @@ Therefore:
 
 1. **Proxy interview use is a v0.1 release blocker.** v0.1 may exist locally,
    tagged, with all CI green, and *still not be published* if it was reached
-   via proxy interview alone. Publishing requires three real human interviews.
+   via proxy interview alone. Publishing requires **four** real human interviews
+   — one per audience listed in the four-population framing above. (v0.1.4
+   read "three"; v0.1.5 restores parity. The recurring drop is itself recorded
+   in `docs/failure-modes.md` as a structural drift the supervisor protocol
+   can detect only with explicit count-checking.)
 2. **If proxy mode is invoked at all, this file must document it explicitly**,
    including: which voice was used, why human contact failed, what the proxy
    said, and what the project would have done differently with a live human.

@@ -25,7 +25,7 @@ This document describes how that premise becomes code.
 | Responsibility    | Choice                                | License                                              | Why                              |
 |-------------------|---------------------------------------|------------------------------------------------------|----------------------------------|
 | signal-ingest     | GNU Radio 3.10 + Greaseweazle         | GPL-3.0 / Unlicense                                  | Media-archaeology baseline       |
-| signal-algebra    | Rust cdylib + `trait Signal`          | source MIT / binary GPL-3.0 / spec Apache-2.0 OR MIT | Materiality enforced at type level |
+| signal-algebra    | Rust rlib + `trait Signal` (cdylib v0.2) | source MIT / binary GPL-3.0 / spec Apache-2.0 OR MIT | Materiality enforced at type level |
 | pattern-DSL       | TS WASM Strudel wrap                  | AGPL-3.0 (web-stage isolation)                       | Algorave inflow                  |
 | AI plugin         | Python sidecar + Qwen3 user-pull      | Apache-2.0 (host) / Tongyi (model, user-pulled)      | Commercial-clause trap avoidance |
 | provenance        | `c2pa-rs` + SynthID                   | MIT                                                  | Provenance standard              |
@@ -56,7 +56,9 @@ license-vs-tool mapping.)
                               │
 ┌──────────────────────────────────────────────────────────────────┐
 │                       signal-algebra (L2)                        │
-│  Rust cdylib. Source MIT, binary GPL-3.0-or-later (via L1).      │
+│  Rust rlib in v0.1 (cdylib deferred to v0.2 when the C ABI for   │
+│    `kittler-archive` plugins lands; see Cargo.toml comment).     │
+│  Source MIT, binary GPL-3.0-or-later (via L1).                   │
 │  trait Signal { type Sample; fn sample_rate_hz() -> Option<u64>; │
 │                 fn provenance() -> ProvenanceTag; fn next_frame } │
 │  trait IntoPatternAtom : Signal { fn to_audio() -> Box<dyn ...>; │
@@ -150,6 +152,26 @@ inside the loop. They are gates G1, G3, G4 and require human action.
 
 ## 7. Score deductions (honest version)
 
+### The five axes (each scored out of 5, max total 25)
+
+A reader has the right to know what `n/25` means before judging `22/25`. The
+R14 critic round graded along five axes, defined as:
+
+1. **General-purpose** — how broadly the design serves users beyond its primary
+   audience (an archivist tool that *also* helps live-coders scores higher than
+   one that needs separate binaries per audience).
+2. **Practicality** — how cheap it is to install, run, and reproduce on a
+   real-world machine (fewer host languages, simpler build, lower bus-factor).
+3. **Durability** — how long the design can survive the legal / upstream /
+   organizational drift around it (license shifts, maintainer departures,
+   protocol obsolescence).
+4. **Thought-fidelity** — how faithfully the artifact preserves Kittler's
+   `Aufschreibesystem` perspective: medium-first, materiality-preserving,
+   apparatus-surfacing (the 5-axis PR filter is its merge-time enforcement).
+5. **Fabrication-resistance** — how hard it is to ship a coherent lie inside
+   the artifact (CI gates, ethics audit, C2PA chain ordering, declared failure
+   modes). The supervisor protocol is its bootstrap-time enforcement.
+
 The concept-memo round closed at **23/25** (the original 4-agent R14 score).
 The architecture round closed at **22/25** — a −1 drift driven by the
 2-binary split (`kittler-archive` vs `kittler-stage`) traded for license
@@ -158,7 +180,7 @@ simply "execute" the concept round, it *cost* a point on the general-purpose
 axis to make the license matrix honest. A reader who only sees the 22/25
 figure should also know that 23/25 was the moving-from point.
 
-The architecture-round −3 break down as:
+### The architecture-round −3 break down as:
 
 - −1 **General-purpose** axis. The 2-binary split (archive vs stage) trades
   some cross-pollination for license cleanliness.
@@ -167,6 +189,10 @@ The architecture-round −3 break down as:
 - −1 **Durability** axis. The Tongyi Qianwen commercial clause is mitigated
   by the user-pull model but not eliminated; future model-license changes
   could force L4 to switch base models.
+
+Thought-fidelity and Fabrication-resistance retained full 5/5 each in v0.1.5
+(after the v0.1.5 closure pass: filename-exemption hardening, SemVer enums,
+SCTE-35 test, governance count regression fix all attach to fabrication).
 
 We chose to ship with the deductions visible. That is the Kittlerian move.
 

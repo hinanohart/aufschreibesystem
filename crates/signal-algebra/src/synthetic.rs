@@ -32,18 +32,43 @@ impl SyntheticIq {
     /// Construct a synthetic IQ source.
     ///
     /// # Panics
-    /// Panics if `sample_rate_hz` is 0 or `duration` is zero. Also panics if
-    /// `duration.as_millis()` does not fit in `u64` (i.e., duration above
-    /// ~584 million years; practically unreachable but checked rather than
-    /// silently truncated).
+    /// - `sample_rate_hz` is 0
+    /// - `duration` is zero
+    /// - `duration.as_millis()` does not fit in `u64` (~584 million years;
+    ///   practically unreachable but checked rather than silently truncated)
+    /// - `sample_rate_hz * duration_ms` would overflow `u64` (saturating mul
+    ///   would silently produce a truncated sample count, which we refuse)
+    /// - `|frequency_hz|` ≥ Nyquist (`sample_rate_hz / 2`); without this the
+    ///   per-sample phase advance can exceed `TAU` and the wrap branch in
+    ///   `next_frame` would silently corrupt the tone (v0.1.5 M4 fix from
+    ///   the omc code review)
     #[must_use]
     pub fn new(sample_rate_hz: u64, frequency_hz: f64, duration: Duration) -> Self {
         assert!(sample_rate_hz > 0, "sample rate must be > 0");
         assert!(!duration.is_zero(), "duration must be > 0");
+        assert!(
+            frequency_hz.is_finite(),
+            "frequency must be finite (got {frequency_hz})"
+        );
+        // Nyquist check: cast u64→f64 is lossless for sample_rate_hz < 2^53,
+        // which covers all real sample-rates.
+        #[allow(clippy::cast_precision_loss)]
+        let nyquist_hz = (sample_rate_hz as f64) / 2.0;
+        assert!(
+            frequency_hz.abs() < nyquist_hz,
+            "frequency {frequency_hz} Hz exceeds Nyquist ({nyquist_hz} Hz) for sample rate {sample_rate_hz}"
+        );
         let duration_ms_u128 = duration.as_millis();
         let duration_ms = u64::try_from(duration_ms_u128)
             .unwrap_or_else(|_| panic!("duration too large for u64 milliseconds"));
-        let total = sample_rate_hz.saturating_mul(duration_ms) / 1_000;
+        // Refuse silent saturating-mul truncation: if rate*ms overflows u64,
+        // the sample count would be wrong and the C2PA stage-1 byte_len would
+        // be a lie. v0.1.4 used saturating_mul; v0.1.5 makes overflow loud.
+        let total = sample_rate_hz
+            .checked_mul(duration_ms)
+            .unwrap_or_else(|| panic!("sample_rate_hz * duration_ms overflows u64"))
+            / 1_000;
+        #[allow(clippy::cast_precision_loss)]
         let step = 2.0 * std::f64::consts::PI * frequency_hz / (sample_rate_hz as f64);
         Self {
             sample_rate_hz,
@@ -75,14 +100,26 @@ impl Signal for SyntheticIq {
         if self.samples_emitted >= self.total_samples {
             return Err(SignalErr::Eof);
         }
+        // u64→usize truncation: legal because we cap at out.len() (usize) below
+        // and a buffer larger than usize::MAX cannot exist. On 32-bit targets a
+        // remaining count above u32::MAX truncates to a smaller chunk, but the
+        // next call resumes from where this one stopped — correctness, not
+        // throughput, is the invariant.
+        #[allow(clippy::cast_possible_truncation)]
         let to_emit = out.len().min(self.remaining() as usize);
         for slot in out.iter_mut().take(to_emit) {
-            *slot = self.phase.sin() as f32;
-            self.phase += self.step;
-            if self.phase > std::f64::consts::TAU {
-                self.phase -= std::f64::consts::TAU;
+            // f64→f32 narrowing: deliberate. Signal::Sample = f32 by contract;
+            // the f64 phase is precision insurance against drift over long runs.
+            #[allow(clippy::cast_possible_truncation)]
+            {
+                *slot = self.phase.sin() as f32;
             }
+            self.phase += self.step;
         }
+        // v0.1.5 M4 fix: collapse accumulated phase via rem_euclid so a step
+        // approaching TAU (only possible if Nyquist guard is bypassed in tests)
+        // is normalized in one operation rather than a single-shot subtract.
+        self.phase = self.phase.rem_euclid(std::f64::consts::TAU);
         self.samples_emitted += to_emit as u64;
         Ok(self.samples_emitted)
     }

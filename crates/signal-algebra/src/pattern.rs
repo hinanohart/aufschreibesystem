@@ -15,7 +15,11 @@ use std::time::Duration;
 ///
 /// `value_atom` is a JSON-serializable opaque atom; the algebra does not
 /// interpret it. L3 (pattern-DSL) decides how to render it.
+///
+/// `#[non_exhaustive]` so v0.2 can add `accent`, `velocity`, etc. without
+/// SemVer-breaking every downstream struct-literal.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct PatternEvent {
     /// Offset from the start of the current cycle.
     pub when_in_cycle: Duration,
@@ -55,7 +59,10 @@ pub enum PatternAtom {
 ///
 /// The `provenance` field is carried alongside the events so the C2PA chain
 /// can re-anchor at the pattern stage without re-fetching the source.
+///
+/// `#[non_exhaustive]` for the same SemVer reason as [`PatternEvent`].
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct EventStream {
     /// Source provenance.
     pub provenance: ProvenanceTag,

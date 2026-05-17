@@ -82,16 +82,31 @@ pub fn audit(path: &Path) -> Vec<Finding> {
     }
 
     // Detector 4 — recording-year must appear as an ISO-shaped 4-digit token
-    // somewhere in the filename. Synthetic fixtures should always include
-    // `synthetic` in their name and are exempted.
-    let is_synthetic_name = name.contains("synthetic") || name.contains("readme");
-    if !is_synthetic_name && !has_iso_year_token(&name) {
+    // somewhere in the filename. Synthetic fixtures must include the literal
+    // `synthetic` token; documentation files must be named *exactly* `readme.md`
+    // / `readme.txt`. Substring matches (e.g. `readmeleaked_classified.iq`) do
+    // NOT qualify — the v0.1.4 audit found that broad `contains("readme")`
+    // could be smuggled. Derived artifacts (`.ast.json` etc.) are NEVER exempt
+    // regardless of name, because a derived artifact is a stage-2/3 output that
+    // must always carry stage-2 provenance metadata.
+    let derived_exts = [".ast.json", ".derived.json", ".interp.json"];
+    let is_derived_artifact = derived_exts.iter().any(|ext| name.ends_with(*ext));
+    let is_readme_filename = matches!(name.as_str(), "readme.md" | "readme.txt");
+    let is_synthetic_capture = name.contains("synthetic");
+    let exempt_from_capture_metadata =
+        !is_derived_artifact && (is_synthetic_capture || is_readme_filename);
+
+    if !exempt_from_capture_metadata && !has_iso_year_token(&name) {
         out.push(Finding::YearMissing);
     }
 
     // Detector 5 — colonial-context heuristic: filename contains a token from
-    // a small curated list of colonial-era place names without a "consent"
-    // marker. v0.2 will replace this with GPS metadata extraction.
+    // a small curated list of colonial-era place names without a community
+    // approved attestation. Consent is asserted ONLY via the path component
+    // `/community-approved/` — bare filename tokens like `consent` were removed
+    // in v0.1.5 because they let an uploader self-attest by renaming
+    // (`brazzaville_consent_1923.iq`). v0.2 will replace this with real GPS
+    // metadata extraction + signed sidecar attestation.
     let colonial_tokens = [
         "brazzaville",
         "leopoldville",
@@ -103,16 +118,13 @@ pub fn audit(path: &Path) -> Vec<Finding> {
         "indochina",
     ];
     let has_colonial = colonial_tokens.iter().any(|t| name.contains(t));
-    let has_consent_marker = name.contains("consent")
-        || path_str.contains("/community-approved/")
-        || name.contains("community-approved");
+    let has_consent_marker = path_str.contains("/community-approved/");
     if has_colonial && !has_consent_marker {
         out.push(Finding::ColonialGps);
     }
 
     // Detector 6 — C2PA manifest must accompany any derived artifact
     // (filenames ending in .ast.json / .derived.json / .interp.json).
-    let derived_exts = [".ast.json", ".derived.json", ".interp.json"];
     if let Some(matched_ext) = derived_exts.iter().find(|ext| name.ends_with(*ext)) {
         // Strip the full compound extension before appending .c2pa so the
         // manifest sits beside the artifact as "<stem>.c2pa", not as
@@ -130,7 +142,8 @@ pub fn audit(path: &Path) -> Vec<Finding> {
 
     // Detector 7 — recording-location language ID must be in the filename for
     // non-synthetic captures, as an ISO 639-3 three-letter token after `lang-`.
-    if !is_synthetic_name && !name.contains("lang-") {
+    // Same exemption rules as detector 4: derived artifacts are NEVER exempt.
+    if !exempt_from_capture_metadata && !name.contains("lang-") {
         out.push(Finding::LanguageIdMissing);
     }
 
@@ -200,6 +213,68 @@ mod tests {
     }
 
     #[test]
+    fn scte35_fixture_is_rejected() {
+        // v0.1.5 closure for an audit gap: detector 2 had logic but no test —
+        // governance.md claims all seven detectors ship in v0.1, so each must
+        // be backed by at least one passing assertion fixture.
+        let p1 = PathBuf::from("fixtures/some_stream_scte35.ts");
+        assert!(audit(&p1).contains(&Finding::Scte35Present));
+        let p2 = PathBuf::from("fixtures/some_stream_scte-35.ts");
+        assert!(audit(&p2).contains(&Finding::Scte35Present));
+    }
+
+    #[test]
+    fn derived_synthetic_artifact_still_requires_capture_metadata() {
+        // v0.1.5 regression test for the C1 bug AUDIT-omc caught: a derived
+        // artifact named `synthetic_*.ast.json` previously skipped both year
+        // and language checks via filename exemption. Now derived artifacts are
+        // never exempt, so the audit must surface YearMissing + LanguageIdMissing
+        // even though the stem says `synthetic`. (ManifestMissing also fires
+        // because no sibling .c2pa exists, which is the desired behaviour.)
+        let p = PathBuf::from("/tmp/synthetic_tone_440hz.ast.json");
+        let findings = audit(&p);
+        assert!(
+            findings.contains(&Finding::YearMissing),
+            "derived synthetic artifact must still require year metadata; got {findings:?}"
+        );
+        assert!(
+            findings.contains(&Finding::LanguageIdMissing),
+            "derived synthetic artifact must still require language metadata; got {findings:?}"
+        );
+    }
+
+    #[test]
+    fn readme_substring_does_not_falsely_exempt_a_capture() {
+        // v0.1.5 regression test: previously `contains("readme")` matched
+        // `readmeleaked_classified.iq`. Now only exact `readme.md` / `readme.txt`
+        // qualifies, so a smuggled IQ filename still gets the full audit.
+        let p = PathBuf::from("fixtures/readmeleaked_classified.iq");
+        let findings = audit(&p);
+        assert!(
+            findings.contains(&Finding::YearMissing),
+            "smuggled `readme*` filename must NOT bypass year check; got {findings:?}"
+        );
+        assert!(
+            findings.contains(&Finding::LanguageIdMissing),
+            "smuggled `readme*` filename must NOT bypass language check; got {findings:?}"
+        );
+    }
+
+    #[test]
+    fn bare_consent_token_does_not_bypass_colonial_detector() {
+        // v0.1.5 regression test for the M1 bug AUDIT-omc caught: previously
+        // `name.contains("consent")` was treated as a community-approval marker,
+        // allowing self-attestation via a rename. Now only the `/community-approved/`
+        // path component qualifies.
+        let p = PathBuf::from("fixtures/brazzaville_consent_1923_lang-fra.iq");
+        let findings = audit(&p);
+        assert!(
+            findings.contains(&Finding::ColonialGps),
+            "bare `consent` token must NOT bypass colonial detector; got {findings:?}"
+        );
+    }
+
+    #[test]
     fn colonial_recording_without_consent_is_rejected() {
         // The exact failure mode MONITOR-1 flagged as the audit's thought-fidelity
         // test case: a recording from a colonial-era place name with no consent marker.
@@ -248,7 +323,8 @@ mod tests {
         // We point at a non-existing .ast.json file: the manifest cannot exist either,
         // so the detector must fire. (Synthetic-name exemption is intentionally NOT
         // applied to derived artifacts — derivations from synthetic sources still
-        // need a manifest stage 2.)
+        // need a manifest stage 2; see `derived_synthetic_artifact_still_requires_capture_metadata`
+        // for the parallel year/lang guarantee added in v0.1.5.)
         let p = PathBuf::from("/tmp/this-derived-file-does-not-exist.ast.json");
         let findings = audit(&p);
         assert!(
