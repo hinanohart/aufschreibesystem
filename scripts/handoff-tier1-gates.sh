@@ -124,6 +124,10 @@ case "$cmd" in
   g4)
     require_human "${1:-}"
     echo "### EXEC G4 — cargo publish (per crate, dependency order)"
+    echo "NOTE: the Phase-2/3 dry-runs WILL fail with 'no matching package"
+    echo "      signal-algebra' until Phase 1 actually uploads — that is a"
+    echo "      cargo limitation (dry-run verifies against the live registry),"
+    echo "      not a build error. The Phase-1 upload + 30 s sleep resolves it."
     echo "Phase 1: signal-algebra"
     cargo publish -p signal-algebra --dry-run
     read -rp "Dry-run looks good? Type YES to actually publish signal-algebra: " yn

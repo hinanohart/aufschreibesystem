@@ -9,7 +9,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-signal-algebra = { path = "../signal-algebra" }
+signal-algebra = { path = "../signal-algebra", version = "0.1" }
 
 [[bin]]
 name = "ethics-audit"
