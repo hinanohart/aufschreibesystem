@@ -5,7 +5,8 @@ description = "Signal-as-syntax: physical archival signals as first-class patter
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+# Override workspace compound SPDX: this crate is MIT-only.
+license = "MIT"
 repository.workspace = true
 
 [lib]

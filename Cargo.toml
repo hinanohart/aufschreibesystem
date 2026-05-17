@@ -1,5 +1,16 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MIT AND GPL-3.0-or-later AND AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Kittler Aufschreibesystem Synthesizer contributors
+#
+# License matrix (see LICENSE for full details):
+#   crates/signal-algebra, crates/c2pa-emit, crates/ethics-audit  → MIT
+#   signal-ingest/                                                  → GPL-3.0-or-later
+#   web-stage/                                                      → AGPL-3.0-or-later
+#
+# [workspace.package].license below is the workspace-wide default used by
+# crates.io and cargo-deny.  Crates under `crates/` inherit this value but
+# each overrides it to "MIT" via `license.workspace = true` paired with their
+# own per-file SPDX header.  The compound expression here ensures tooling that
+# reads only Cargo.toml sees all licenses present in the repository.
 [workspace]
 resolver = "2"
 members = [
@@ -12,7 +23,9 @@ members = [
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
-license = "MIT"
+# Compound SPDX: workspace default covers all per-directory licenses.
+# Individual crates under crates/ are MIT-only; see each Cargo.toml.
+license = "MIT AND GPL-3.0-or-later AND AGPL-3.0-or-later"
 repository = "https://github.com/hinanohart/aufschreibesystem"
 
 [workspace.lints.rust]
