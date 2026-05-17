@@ -73,10 +73,14 @@ case "$cmd" in
     echo "Gate-by-gate status (cross-reference docs/release-status.md)"
     echo "  G1 gh repo create ...... $(git remote get-url origin >/dev/null 2>&1 && echo DONE || echo PENDING) (requires --yes-i-am-human)"
     echo "  G2 gh secret set ....... PENDING-OR-NOT-NEEDED (v0.1 needs no CI secret; required at v0.2 publish step)"
-    echo "  G3 git push ............ $(if git remote get-url origin >/dev/null 2>&1; then
-        ahead=$(git rev-list --count @{u}..HEAD 2>/dev/null || echo unknown)
-        [[ \"$ahead\" == \"0\" ]] && echo DONE || echo PENDING\ \(\${ahead}\ commits\ ahead\ of\ remote\)
-      else echo PENDING; fi) (requires --yes-i-am-human; G1 first)"
+    # G3 state — compute once outside the echo subshell so quoting is sane.
+    if git remote get-url origin >/dev/null 2>&1; then
+      g3_ahead=$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo unknown)
+      if [[ "$g3_ahead" == "0" ]]; then g3_state="DONE"; else g3_state="PENDING (${g3_ahead} commits ahead of remote)"; fi
+    else
+      g3_state="PENDING (no origin remote; run G1)"
+    fi
+    echo "  G3 git push ............ $g3_state (requires --yes-i-am-human; G1 first)"
     echo "  G4 cargo publish ....... PENDING (requires --yes-i-am-human; G1+G3 first; deliberate, separate from \`all\`)"
     echo "  G5 sidecar default ..... NOT-DECIDED (see plugins/ai/README.md; user decides default-on vs default-off before v0.2)"
     if [[ -f "$INTERVIEW_LOG" ]]; then
