@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT AND GPL-3.0-or-later AND Apache-2.0 -->
 # Contributing to aufschreibesystem
 
 ## Prerequisites

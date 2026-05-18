@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT AND GPL-3.0-or-later AND Apache-2.0
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "Signal-as-syntax pattern algebra for media-archaeology archival signals (Kittler-Stiegler)"
